@@ -6,9 +6,9 @@
 /// @licence GPL 2.0
 
 #include <Arduino.h>
-#include "freertos/FreeRTOS.h"  // Needs for task supervising
-#include "freertos/task.h"      // Needs for task supervising
-#include "mbedtls/base64.h"     // Lib for Base64 coding/decoding
+#include "freertos/FreeRTOS.h"  // Needed for task supervision
+#include "freertos/task.h"      // Needed for task supervision
+#include "mbedtls/base64.h"     // Library for Base64 encoding/decoding
 #include <Wire.h>               // I2C
 #include <GxEPD2_BW.h>          // E-Ink display
 #include <WiFi.h>
@@ -16,7 +16,7 @@
 #include <ArduinoJson.h>
 
 extern "C" {
-  #include "puff.h"            // Lib for gzip (Lib kann nur DEFLATE)
+  #include "puff.h"            // Library for gzip (Library supports only DEFLATE)
 }
 
 // FreeFonts from Adafruit_GFX
@@ -63,24 +63,23 @@ SET_LOOP_TASK_STACK_SIZE(24 * 1024); // 24 KB stack size for loop task
 // GxEPD2_BW<GxEPD2_420_GYE042A87, GxEPD2_420_GYE042A87::HEIGHT> display(GxEPD2_420_GYE042A87(OBP_SPI_CS, OBP_SPI_DC, OBP_SPI_RST, OBP_SPI_BUSY)); // GYE042A87, 400x300, SSD1683 (no inking)
 GxEPD2_BW<GxEPD2_420_GDEY042T81, GxEPD2_420_GDEY042T81::HEIGHT> display(GxEPD2_420_GDEY042T81(OBP_SPI_CS, OBP_SPI_DC, OBP_SPI_RST, OBP_SPI_BUSY)); // GDEY042T81, 400x300, SSD1683 (no inking)
 
-// WLAN-Zugangsdaten
+// WiFi credentials
 const char* ssid = "MySSID";
 const char* password = "MyPassword";
 
-// JSON-Dokument für die empfangenen Daten
-// JSON-Dokument für die empfangenen Daten
+// JSON document for reseived data
 DynamicJsonDocument doc(JSON_BUFFER);
 bool jsonValid = false;
 
 int loopCounter = 0;
 int angle = 0;
 
-// Funktion GZIP-Header analysieren (nur sehr einfacher Parser)
+// Analyze function GZIP-Header  (only very simple parser)
 int skipGzipHeader(const uint8_t* data, size_t len) {
-  if (len < 10) return -1;  // ungültig
-  if (data[0] != 0x1F || data[1] != 0x8B || data[2] != 0x08) return -2;  // kein gzip / kein deflate
+  if (len < 10) return -1;  // Invalid
+  if (data[0] != 0x1F || data[1] != 0x8B || data[2] != 0x08) return -2;  // No gzip / no DEFLATE
 
-  int pos = 10;  // Basiskopf
+  int pos = 10;  // Base header
 
   uint8_t flags = data[3];
   if (flags & 0x04) {  // FEXTRA
@@ -98,13 +97,13 @@ int skipGzipHeader(const uint8_t* data, size_t len) {
   }
   if (flags & 0x02) pos += 2;  // FHCRC
 
-  if (pos >= len) return -4;  // Header unvollständig
-  return pos;  // Startposition des DEFLATE-Datenstroms
+  if (pos >= len) return -4;  // Header incomplete
+  return pos;  // Start position of DEFLATE data stream
 }
 
 void setup() {
 
-  // Init digital pins OBP60
+  // Initialize digital pins
   delay(1000);
   #ifdef BOARD_OBP60S3
     pinMode(5, OUTPUT);
@@ -120,7 +119,7 @@ void setup() {
     delay(100);
   #endif
 
-  // Init E-Ink display
+  // Initialize E‑Ink display
   display.init(115200);
   display.setTextColor(GxEPD_BLACK);
   display.setRotation(0);
@@ -131,17 +130,17 @@ void setup() {
   display.drawBitmap(0, 0, gImage_Logo_OBP_400x300_sw, display.width(), display.height(), GxEPD_BLACK);
   display.nextPage();
 
-  // Init serial ports
+  // Initialize serial ports
   Serial.begin(115200);                     // USB serial port
 
   //WiFi login
   WiFi.begin(ssid, password);
-  Serial.print("Verbinde mit WLAN");
+  Serial.print("Connecting WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.print("WLAN verbunden mit: ");
+  Serial.print("WiFi connected with: ");
   Serial.println(ssid);
 
   // Ready to start
@@ -164,7 +163,7 @@ void loop() {
     HTTPClient http;
     WiFiClient client;
 
-    // Drehende Karte ausgeben
+    // Display rotating map
     angle = (loopCounter % 360);  // 1° per request
 
     // URL sample
@@ -176,13 +175,13 @@ void loop() {
 
     loopCounter++;
 
-    Serial.printf("Start HTTPAnfrage 0 ms\n");
-    startTime = millis(); // Zeitmessung starten
+    Serial.printf("Start HTTP request 0 ms\n");
+    startTime = millis(); // Start time measurement
     
     http.begin(client, url);
     http.addHeader("Accept-Encoding", "gzip");
 
-    // HTTP-Anfrage starten
+    // Start HTTP request
     int httpCode = http.GET();
     if (httpCode == HTTP_CODE_OK && (millis() - startTime < MAX_DELAY)) {
       WiFiClient* stream = http.getStreamPtr();
@@ -191,19 +190,19 @@ void loop() {
       uint8_t* compressedData = new uint8_t[COMPRESSED_MAX_SIZE];
       size_t compressedLength = 0;
 
-      // Gzip Antwort einlesen
+      // Read Gzip response
       unsigned long lastTime = millis();
       int blockwise = 0;
       while (http.connected() && stream->available() && compressedLength < COMPRESSED_MAX_SIZE) {
         if(blockwise == 1){
-          // Stream blockweise einlesen (Kann bei lansamen und gestörten IP-Verbindungen sinnvoll sein.
-          // Erhöht aber die Zeit zum Einlesen auf 5000 ms durch die vielen kleinen Blöcke.)
-          size_t readLen = stream->readBytes(compressedData + compressedLength, 512); // oder 1024 Byte
+          // Read stream block by block (Is helpully for slow or critical connections.
+          // However increases the read time to 5000 ms because it use many tiny blocks.)
+          size_t readLen = stream->readBytes(compressedData + compressedLength, 512); // or 1024 Byte
           if (readLen == 0) break;
           compressedLength += readLen;
         }
         else{
-          // Direkt als Ganzes einlesen
+          // Read directly as a complete block
           compressedData[compressedLength++] = stream->read();
           if (compressedLength % 1024 == 0) {
             Serial.printf("%u Bytes in %lu ms\n", compressedLength, millis() - lastTime);
@@ -213,17 +212,17 @@ void loop() {
         
       }
       endTime = millis() - startTime;
-      Serial.printf("Gzip Antwort (%d Byte) empfangen in %lu ms\n",compressedLength, endTime);
+      Serial.printf("gzip answare (%d Byte) received in %lu ms\n",compressedLength, endTime);
 
-      // Gzip Header-Ende finden (dort beginnt DEFLATE)
+      // Find gzip header end (on this oisition beginsDEFLATE)
       int deflateStart = skipGzipHeader(compressedData, compressedLength);
       if (deflateStart < 0) {
-        Serial.printf("Ungültiger GZIP-Header: Code %d\n", deflateStart);
+        Serial.printf("Unvalid gzip header: Code %d\n", deflateStart);
         delete[] compressedData;
         return;
       }
 
-      // Gzip Header überspringen und den DEFLATE-Teil entpacken
+      // Skip gzip header and decompress DEFLATE part
       uint8_t* uncompressedData = new uint8_t[JSON_BUFFER];
       unsigned long uncompressedSize = JSON_BUFFER;
       unsigned long sourceLen = compressedLength - deflateStart;
@@ -232,38 +231,38 @@ void loop() {
                         compressedData + deflateStart, &sourceLen);
       delete[] compressedData;
       endTime = millis() - startTime;
-      Serial.printf("Gzip Antwort (%d Byte) entpackt in %lu ms\n",uncompressedSize, endTime);
+      Serial.printf("gzip answare (%d Byte) unpacked in %lu ms\n",uncompressedSize, endTime);
 
-      // Wenn entpacken erfolgreich war, den JSON-String parsen
+      // If decompression was successful, parse the JSON string
       if (result == 0) {
         DeserializationError error = deserializeJson(doc, uncompressedData, uncompressedSize);
         delete[] uncompressedData;
 
-        // Wenn kein Fehler beim Parsen, ist der JSON-Inhalt nutzbar
+        // If no Error on parsing then is JSON content usable
         if (!error) {
           jsonValid = true;
           endTime = millis() - startTime;
-          Serial.printf("JSON ausgelesen in %lu ms.\n", endTime);
+          Serial.printf("JSON read in %lu ms.\n", endTime);
 //          Serial.println(doc.as<String>().substring(0, 200));
         } else {
           jsonValid = false;
-          Serial.print("JSON Fehler nach gzip: ");
+          Serial.print("JSON error after unpacked gzip: ");
           Serial.println(error.c_str());
         }
       } else {
         jsonValid = false;
-        Serial.printf("Fehler beim Dekomprimieren (puff): Code %d\n", result);
+        Serial.printf("Unpack error (puff): Code %d\n", result);
       }
     } else {
       jsonValid = false;
       endTime = millis() - startTime;
-      Serial.printf("HTTP Fehler: %d (in %lu ms)\n", httpCode, endTime);
+      Serial.printf("HTTP error: %d (in %lu ms)\n", httpCode, endTime);
     }
 
     http.end();
   }
 
-  // Einlesewerte auf Defaults setzen
+  // Set read values to defaults
   int numPix = 0;
   float lat = 0;
   float lon = 0;
@@ -272,7 +271,7 @@ void loop() {
   int mapType = 0;
   int rotAngle = 0;
 
-  // JSON-Inhalte einlesen und anzeigen
+  // Read and display JSON contents
   if (jsonValid) {
     if (doc.containsKey("number_pixels")) {
       numPix = doc["number_pixels"];
@@ -303,27 +302,27 @@ void loop() {
       Serial.printf("Rot Angle: %d\n", rotAngle);
     }
 
-    // JSON-Bilddaten (Base64) in Bild für e-Paper Display umwandeln
-    unsigned char imageData_sw[numPix];   // Binary Bild Array
+    // Convert JSON image data (Base64) to image e-Paper data
+    unsigned char imageData_sw[numPix];   // Binary Image Array
     if (doc.containsKey("picture_base64")) {
       String bytesBase64 = doc["picture_base64"];
       //Serial.println(bytesBase64.substring(0, 200));
 
       size_t decodedLen = 0;
-      // Dekodieren mit mbedtls_base64_decode
+      // Decoding with mbedtls_base64_decode
       int ret = mbedtls_base64_decode(
-        imageData_sw,                       // Zielpuffer
-        sizeof(imageData_sw),               // Maximale Größe
-        &decodedLen,                        // Tatsächliche Größe nach dem Dekodieren
-        (const unsigned char*)bytesBase64.c_str(),  // Eingabe-Base64-String
+        imageData_sw,                       // Destination buffer
+        sizeof(imageData_sw),               // Maximum size
+        &decodedLen,                        // Actual size after decoding
+        (const unsigned char*)bytesBase64.c_str(),  // Input Base64 string
         bytesBase64.length()
       );  
     }
     endTime = millis() - startTime;
-    Serial.printf("Bild umgeladen in %lu ms\n", endTime);
+    Serial.printf("Picture build in %lu ms\n", endTime);
 
-    // Bild ausgeben
-    if((loopCounter % 60) == 0){  // Nach 60 Bildern Vollresfresh
+    // Render image
+    if((loopCounter % 60) == 0){  // After 60 images full refresh
       display.setFullWindow();    // Set full update
 /*
         display.fillScreen(GxEPD_BLACK);
@@ -341,14 +340,14 @@ void loop() {
     display.nextPage();
 
     endTime = millis() - startTime;
-    Serial.printf("Bild ausgeben in %lu ms\n", endTime);
+    Serial.printf("Picture outpt in %lu ms\n", endTime);
   }
 
-  // Stack-Überwachung
+  // Stack monitoring
   UBaseType_t highWaterMark = uxTaskGetStackHighWaterMark(loopTaskHandle);
-  Serial.printf("Loop-Task: Freier Stack: %u Bytes\n", highWaterMark * sizeof(StackType_t));
+  Serial.printf("Loop-Task: Free Stack: %u Bytes\n", highWaterMark * sizeof(StackType_t));
 
-  Serial.println("Neue Anfrage in 3s");
+//  Serial.println("New request in 3s");
 //  delay(3000);
 }
 

@@ -67,7 +67,7 @@ GxEPD2_BW<GxEPD2_420_GDEY042T81, GxEPD2_420_GDEY042T81::HEIGHT> display(GxEPD2_4
 const char* ssid = "MySSID";
 const char* password = "MyPassword";
 
-// JSON document for reseived data
+// JSON document for received data
 DynamicJsonDocument doc(JSON_BUFFER);
 bool jsonValid = false;
 

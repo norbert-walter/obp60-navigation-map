@@ -169,9 +169,12 @@ void loop() {
     // URL sample
     // http://192.168.1.67:8080/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=10&mtype=9&dtype=1&width=400&height=300&debug=1
     // URL for OBP map service
-    String url = "http://norbert-walter.dnshome.de/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=" + String(angle) + "&mtype=9&dtype=1&width=400&height=250&debug=1";
+    // String url = "http://norbert-walter.dnshome.de/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=" + String(angle) + "&mtype=9&dtype=1&width=400&height=250&debug=1";
+    String url = "http://norbert-walter.dnshome.de/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=" + String(angle) + "&mtype=9&dtype=1&width=400&height=250&cutout=0&border=2&symbol=2&ssize=15&srot=" + String(angle) + "&grid=1";
     // URL for self hosted map service (needs the port 8080)
     // String url = "http://192.168.1.67:8080/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=" + String(angle) + "&mtype=9&dtype=1&width=400&height=250&debug=1";
+    // Sample for round cutout
+    // String url = "http://192.168.1.67:8080/get_image_json?zoom=15&lat=53.9028&lon=11.4441&mrot=" + String(angle) + "&mtype=9&dtype=1&width=250&height=250&cutout=1&border=2&grid=1";
 
     loopCounter++;
 
@@ -214,7 +217,7 @@ void loop() {
       endTime = millis() - startTime;
       Serial.printf("gzip answare (%d Byte) received in %lu ms\n",compressedLength, endTime);
 
-      // Find gzip header end (on this oisition beginsDEFLATE)
+      // Find gzip header end (on this poisition begins DEFLATE)
       int deflateStart = skipGzipHeader(compressedData, compressedLength);
       if (deflateStart < 0) {
         Serial.printf("Unvalid gzip header: Code %d\n", deflateStart);

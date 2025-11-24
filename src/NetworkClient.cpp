@@ -11,7 +11,7 @@ NetworkClient::NetworkClient(size_t jsonBufferSize)
 {
 }
 
-//  GZIP Hheader parser
+//  GZIP header parser
 int NetworkClient::skipGzipHeader(const uint8_t* data, size_t len) {
     if (len < 10) return -1;  // Invalid
     if (data[0] != 0x1F || data[1] != 0x8B || data[2] != 0x08) return -2;  // No gzip / no DEFLATE
@@ -86,7 +86,7 @@ bool NetworkClient::fetchAndDecompressJson(const String& url) {
         return false;
     }
 
-    // Analyze gzip header and set the correct position for DEFLATE
+    // Analyze gzip header and set the correct position for DEFLATE section
     int deflatePos = skipGzipHeader(compressed, compressedLen);
     if (deflatePos < 0) {
         Serial.printf("Invalid GZIP header: %d\n", deflatePos);
@@ -107,7 +107,7 @@ bool NetworkClient::fetchAndDecompressJson(const String& url) {
     delete[] compressed;
 
     if (result != 0) {
-        Serial.printf("puff() ERR: %d\n", result);
+        Serial.printf("Deflate gzip error: %d\n", result);
         delete[] uncompressed;
         return false;
     }

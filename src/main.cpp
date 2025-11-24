@@ -1,5 +1,5 @@
 /// @file    main.cpp
-/// @brief   Test fuctions for multi function display OBP60
+/// @brief   Test fuctions for multi function display OBP60 / OBP40
 /// @example main.cpp
 /// @author  Norbert Walter
 /// @org     Open Boat Projects
@@ -9,8 +9,8 @@
 //#include <WiFi.h>
 #include <Wire.h>               // I2C
 #include <GxEPD2_BW.h>          // E-Ink display
-#include "NetworkClient.h"
-#include "ImageDecoder.h"
+#include "NetworkClient.h"      // Network connection
+#include "ImageDecoder.h"       // Image decoder for navigation map
 
 // FreeFonts from Adafruit_GFX
 #include "Ubuntu_Bold8pt7b.h"
@@ -126,23 +126,43 @@ void setup() {
 //################################################
 
 void loop() {
-    // Rotate he picture in 1° steps
+    // Rotate the picture in 1° steps
     int angle = loopCounter % 360;
 
+    // Server settings 
+    String server = "norbert-walter.dnshome.de";
+    int port = 80;
+
     // URL to OBP Maps Converter
-    String url = String("http://norbert-walter.dnshome.de/get_image_json?")
-                 + "zoom=15&lat=53.9028&lon=11.4441&mrot=" + angle +
-                   "&mtype=9&dtype=1&width=400&height=250";
+    // For more details see: https://github.com/norbert-walter/maps-converter
+    String url = String("http://") + server + ":" + port +  // OBP Server
+                 String("/get_image_json?") +               // Service: Output B&W picture as JSON (Base64 + gzip)
+                 "zoom=15" +        // Zoom level: 15
+                 "&lat=53.9028" +   // Latitude
+                 "&lon=11.4441" +   // Longitude
+                 "&mrot=" + angle + // Rotation angle navigation map
+                 "&mtype=9" +       // Free Nautical Charts with depth
+                 "&dtype=1" +       // Dithering type: Threshold dithering
+                 "&width=400" +     // With navigation map
+                 "&height=250" +    // Height navigation map
+                 "&cutout=0" +      // No picture cutouts
+                 "&tab=0" +         // No tab size
+                 "&border=2" +      // Border line size: 2 pixel
+                 "&symbol=2" +      // Symbol: Triangle
+                 "&srot=" + angle + // Symbol rotation angle
+                 "&ssize=15" +      // Symbole size: 15 pixel
+                 "&grid=1"          // Show grid: On
+                 ;         
 
     // If a network connection to URL
-    if (net.fetchAndDecompressJson(url)) {        // Connect to URL and read gzip answare and deflate JSON content
+    if (net.fetchAndDecompressJson(url)) {        // Connect to URL, read gzip answare and deflate JSON content
         auto& json = net.json();                  // Parse JSON content
         int numPix = json["number_pixels"] | 0;   // Read number of picture pixels
         String b64 = json["picture_base64"] | ""; // Read the Base64 bit steram content (picture)
         static uint8_t imageData[400 * 300];      // Set picture buffer
         size_t decodedSize = 0;                   // Reset decoded size of Basse64 bit stream content
 
-        decoder.decodeBase64(b64, imageData, sizeof(imageData), decodedSize); // Decode Basse64 bit stream content
+        decoder.decodeBase64(b64, imageData, sizeof(imageData), decodedSize); // Decode Base64 bit stream content
 
         // Render image
         // After 60 images full refresh
@@ -158,6 +178,7 @@ void loop() {
         display.nextPage();
         }
 
-    loopCounter++;  
+    loopCounter++;  // Counter value + 1
+    Serial.printf("Free Heap: %u Bytes\n", ESP.getFreeHeap());
 }
 

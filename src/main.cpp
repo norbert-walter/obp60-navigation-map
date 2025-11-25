@@ -108,13 +108,26 @@ void setup() {
 
   //WiFi login
   WiFi.begin(ssid, password);
-  Serial.print("Connecting WiFi");
+  Serial.print("Connecting WiFi: ");
+  Serial.println(ssid);
+
+  display.fillScreen(GxEPD_WHITE);  // Clear screen
+  display.setFont(&Ubuntu_Bold12pt7b);
+  display.setCursor(20, 150);
+  String output = "Connecting WiFi: " + String(ssid) + " ...";
+  display.print(output);  // Show info on e-paper display
+  display.nextPage();
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.print("WiFi connected with: ");
-  Serial.println(ssid);
+  Serial.println("WiFi connected");
+
+  display.setCursor(20, 170);
+  display.print("WiFi connected");  // Show info on e-paper display
+  display.nextPage();
+  delay(1500);
 
   // Ready to start
   tone(BUZZER, 4000); // Buzzer via GPIO 4kHz
@@ -183,6 +196,9 @@ void loop() {
         }
 
     loopCounter++;  // Counter value + 1
+    Serial.printf("Heap Size: %u Bytes\n", ESP.getHeapSize());
     Serial.printf("Free Heap: %u Bytes\n", ESP.getFreeHeap());
+    Serial.printf("PSRAM Size: %d bytes\n", ESP.getPsramSize());
+    Serial.printf("Free PSRAM: %d bytes\n", ESP.getFreePsram());
 }
 

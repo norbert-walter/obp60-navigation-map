@@ -30,6 +30,7 @@
   #define OBP_SPI_DIN 48    // DIN
   #define GxEPD_WIDTH 400   // Display width
   #define GxEPD_HEIGHT 300  // Display height
+  #define BUZZER 16         // Buzzer
 #endif
 
 #ifdef BOARD_OBP40S3
@@ -42,6 +43,7 @@
   #define OBP_SPI_DIN 11    // DIN
   #define GxEPD_WIDTH 400   // Display width
   #define GxEPD_HEIGHT 300  // Display height
+  #define BUZZER 18         // Buzzer
 #endif
 
 // Limits
@@ -76,15 +78,17 @@ void setup() {
   delay(1000);
   #ifdef BOARD_OBP60S3
     pinMode(5, OUTPUT);
-    digitalWrite(5, HIGH);  //Power line on for 5V and 3.3V       
+    digitalWrite(5, HIGH);    // Power line on for 5V and 3.3V
+    pinMode(BUZZER, OUTPUT);  // Buzzer
     delay(100);
   #endif
 
   #ifdef BOARD_OBP40S3
     pinMode(7, OUTPUT);
-    digitalWrite(7, HIGH);  //Power e-paper display
+    digitalWrite(7, HIGH);    // Power e-paper display
     pinMode(41, OUTPUT);
-    digitalWrite(41, HIGH);  //Power LED     
+    digitalWrite(41, HIGH);   // Power LED
+    pinMode(BUZZER, OUTPUT);  // Buzzer 
     delay(100);
   #endif
 
@@ -113,9 +117,9 @@ void setup() {
   Serial.println(ssid);
 
   // Ready to start
-  tone(16, 4000); // Buzzer GPIO16 4kHz
-  delay(200);     // Duration 200ms
-  noTone(16);     // Disable beep
+  tone(BUZZER, 4000); // Buzzer via GPIO 4kHz
+  delay(200);         // Duration 200ms
+  noTone(BUZZER);     // Disable beep
   Serial.println("Boot Beep 4kHz");
 }
 
